@@ -2,6 +2,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 {- |
 Result of pair programming with [bumbleblym](https://github.com/bumbleblym)
@@ -69,6 +71,8 @@ import Control.Monad (replicateM, void)
 import qualified Data.Char as Char
 import Data.Foldable (foldl')
 import Data.Kind (Type) 
+import Data.Proxy
+import Data.Typeable
 import GHC.TypeNats
 import Text.ParserCombinators.ReadP
 
@@ -82,12 +86,25 @@ type Solution = TestCase
 type Color = Char
 type Grid = [[Color]]
 
+data SomeGrid a where
+    SomeGrid :: KnownNat n => Vector n (Vector n a) -> SomeGrid a
+
 data SomeVector a where
     SomeVector :: KnownNat n => Vector n a -> SomeVector a
 
 newtype Vector (n :: Nat) (a :: Type) = Vector 
     { unVector :: [a]
     }
+
+mkSomeGrid :: forall n a . KnownNat n => [Vector n a] -> Maybe (SomeGrid a)
+mkSomeGrid xs = case mkSomeVector xs of
+    SomeVector (v :: Vector m (Vector n a)) -> case sameNat (Proxy @m) (Proxy @n) of
+        Nothing -> Nothing
+        Just Refl -> Just $ SomeGrid v
+
+mkSomeVector :: forall a . [a] -> SomeVector a
+mkSomeVector xs = case someNatVal (fromIntegral $ length xs) of 
+    SomeNat (_ :: Proxy n) -> SomeVector (Vector xs :: Vector n a)
 
 -- | Parse the input to a list of test cases
 parse :: String -> [TestCase]
