@@ -79,7 +79,7 @@ import GHC.TypeNats
 import Text.ParserCombinators.ReadP
 
 data TestCase = TestCase 
-    { getGrid :: Grid
+    { tcGrid :: Grid
     } deriving (Show)
 
 type Solution = TestCase
@@ -124,7 +124,7 @@ parse s = fst $ head $ readP_to_S inputP s
         numTestCasesP = int
         sizeP = int
 
-        someGridP :: Int -> ReadP (SomeGrid Color)
+        someGridP :: Int -> ReadP Grid
         someGridP n = case someNatVal (fromIntegral n) of
             SomeNat (_ :: Proxy n) -> do
                 let rowP :: ReadP (Vector n Color)
