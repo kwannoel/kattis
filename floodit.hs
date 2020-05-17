@@ -124,47 +124,6 @@ someGridP n = case someNatVal (fromIntegral n) of
         
         in gridP
 
-class Functor f => Applicative f where
-    pure :: a -> f a
-    pure x = const x <$> unit
-    (<*>) :: f (a -> b) -> f a -> f b
-    f <*> a = (\(f, a) -> f a :: (a -> b, a) -> b) <$> (fzip f a :: f (a -> b, a))
-
-type a * b = (a, b) -- unit = ()
-type a + b = Either a b -- unit = Void
-
-class Functor f where
-    map :: (a -> b) -> (f a -> f b)
-
-    fmap :: (a -> b) -> (f a -> f b)
-    fmap = map
-
-class Functor f => Apply f where
-    product :: f a * f b -> f (a * b)
-
-    (<*>) :: f (a -> b) -> f a -> f b
-    f <*> a = uncurry ($) <$> product (f, a)
-
-class Apply f => Applicative f where
-    one :: f ()
-
-    pure :: a -> f a
-    pure x = const x <$> one
-
-class Functor f => Alt f where
-    sum :: f a * f b -> f (a + b)
-
-    (<|>) :: f a -> f a -> f a
-    x <|> y = either id id <$> sum (x, y)
-
-class Alt f => Plus f where
-    zero :: f Void
-
-    empty :: f a
-    empty = absurd <$> zero
-
-class (Applicative f, Plus f) => Alternative f
-
 -- | Parse the input to a list of test cases
 parse :: String -> [TestCase]
 parse s = fst $ head $ readP_to_S inputP s
