@@ -67,6 +67,7 @@ module Main
     ( main
     ) where
 
+import Control.Applicative
 import Control.Monad (replicateM, void)
 import qualified Data.Char as Char
 import Data.Foldable (foldl')
@@ -96,7 +97,7 @@ newtype Vector (n :: Nat) (a :: Type) = Vector
     { unVector :: [a]
     }
 
-mkSomeGrid :: forall n a . KnownNat n => [Vector n a] -> Maybe (SomeGrid a)
+mkSomeGrid :: KnownNat n => [Vector n a] -> Maybe (SomeGrid a)
 mkSomeGrid xs = case mkSomeVector xs of
     SomeVector (v :: Vector m (Vector n a)) -> case sameNat (Proxy @m) (Proxy @n) of
         Nothing -> Nothing
@@ -105,6 +106,64 @@ mkSomeGrid xs = case mkSomeVector xs of
 mkSomeVector :: forall a . [a] -> SomeVector a
 mkSomeVector xs = case someNatVal (fromIntegral $ length xs) of 
     SomeNat (_ :: Proxy n) -> SomeVector (Vector xs :: Vector n a)
+
+someGridP :: Int -> ReadP (SomeGrid Color)
+someGridP n = case someNatVal (fromIntegral n) of
+    SomeNat (_ :: Proxy n) -> 
+        let rowP :: ReadP (Vector n Color)
+            rowP = do
+                xs <- count n $ satisfy (`elem` "123456")
+                case mkSomeVector xs of
+                    SomeVector (v :: Vector m a) -> case sameNat (Proxy @m) (Proxy @n) of
+                        Nothing -> empty
+                        Just Refl -> pure v
+
+            gridP :: ReadP (SomeGrid Color)
+            -- gridP = SomeVector <$> (undefined :: Vector n (Vector n Color))
+            gridP = undefined
+        
+        in gridP
+
+class Functor f => Applicative f where
+    pure :: a -> f a
+    pure x = const x <$> unit
+    (<*>) :: f (a -> b) -> f a -> f b
+    f <*> a = (\(f, a) -> f a :: (a -> b, a) -> b) <$> (fzip f a :: f (a -> b, a))
+
+type a * b = (a, b) -- unit = ()
+type a + b = Either a b -- unit = Void
+
+class Functor f where
+    map :: (a -> b) -> (f a -> f b)
+
+    fmap :: (a -> b) -> (f a -> f b)
+    fmap = map
+
+class Functor f => Apply f where
+    product :: f a * f b -> f (a * b)
+
+    (<*>) :: f (a -> b) -> f a -> f b
+    f <*> a = uncurry ($) <$> product (f, a)
+
+class Apply f => Applicative f where
+    one :: f ()
+
+    pure :: a -> f a
+    pure x = const x <$> one
+
+class Functor f => Alt f where
+    sum :: f a * f b -> f (a + b)
+
+    (<|>) :: f a -> f a -> f a
+    x <|> y = either id id <$> sum (x, y)
+
+class Alt f => Plus f where
+    zero :: f Void
+
+    empty :: f a
+    empty = absurd <$> zero
+
+class (Applicative f, Plus f) => Alternative f
 
 -- | Parse the input to a list of test cases
 parse :: String -> [TestCase]
