@@ -119,10 +119,19 @@ someGridP n = case someNatVal (fromIntegral n) of
                         Just Refl -> pure v
 
             gridP :: ReadP (SomeGrid Color)
-            -- gridP = SomeVector <$> (undefined :: Vector n (Vector n Color))
-            gridP = undefined
-        
+            gridP = do
+                xs <- countSepBy n newline rowP
+                case mkSomeGrid xs of
+                    Nothing -> empty
+                    Just g -> pure g
+
         in gridP
+    where
+        countSepBy :: Int -> ReadP sep -> ReadP a -> ReadP [a]
+        countSepBy n sep p = (:) <$> p <*> replicateM (n - 1) (sep *> p)
+    
+        newline :: ReadP Char
+        newline = satisfy (== '\n')
 
 -- | Parse the input to a list of test cases
 parse :: String -> [TestCase]
