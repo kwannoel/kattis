@@ -64,7 +64,7 @@ __sample output__
 (5,["11131","12211","31311","21111","11111"])
 
 -}
-module Main 
+module Main
     ( main
     ) where
 
@@ -72,13 +72,13 @@ import Control.Applicative
 import Control.Monad (replicateM, void)
 import qualified Data.Char as Char
 import Data.Foldable (foldl')
-import Data.Kind (Type) 
+import Data.Kind (Type)
 import Data.Proxy
 import Data.Typeable
 import GHC.TypeNats
 import Text.ParserCombinators.ReadP
 
-data TestCase = TestCase 
+data TestCase = TestCase
     { tcGrid :: Grid
     } deriving (Show)
 
@@ -97,12 +97,12 @@ data SomeVector a where
 
 deriving instance Show a => Show (SomeVector a)
 
-newtype Vector (n :: Nat) (a :: Type) = Vector 
+newtype Vector (n :: Nat) (a :: Type) = Vector
     { unVector :: [a]
     } deriving (Show)
 
 mkSomeVector :: forall a . [a] -> SomeVector a
-mkSomeVector xs = case someNatVal $ fromIntegral (length xs) of 
+mkSomeVector xs = case someNatVal $ fromIntegral (length xs) of
     SomeNat (_ :: Proxy n) -> SomeVector (Vector xs :: Vector n a)
 
 -- | Parse the input to a list of test cases
@@ -141,7 +141,7 @@ parse s = fst $ head $ readP_to_S inputP s
                         Nothing -> empty
                         Just Refl -> pure $ SomeGrid v
 
-        -- | @countSepBy n sep p@ parses @n@ occurrences of @p@ in sequence, separated by @sep@. A list of results is returned. 
+        -- | @countSepBy n sep p@ parses @n@ occurrences of @p@ in sequence, separated by @sep@. A list of results is returned.
         countSepBy :: Int -> ReadP sep -> ReadP a -> ReadP [a]
         countSepBy n sep p = (:) <$> p <*> replicateM (n - 1) (sep *> p)
 
