@@ -1,9 +1,13 @@
 -- stack --system-ghc runghc
+-- Problem set: https://open.kattis.com/problems/watchdog/submit
+-- Status: ACCEPTED
+
 {-# LANGUAGE GADTs #-}
 
 module Main where
 
 import           Data.Foldable (foldl')
+import           Data.List((\\))
 import           GHC.Generics
 import           Text.Parsec
 import           Text.Parsec.Char (digit)
@@ -26,39 +30,6 @@ instance Show Solution where
     show Poodle = "poodle"
 
 type Parser = Parsec String ()
-
--- ==================
--- = HEAP UTILITIES =
--- ==================
-
--- | A pairing heap
-data Heap a = EmptyHeap | Ord a => Heap (Tree a)
-data Tree a = Tree a [Tree a]
-
-extractMin :: Heap a -> Maybe (a, Heap a)
-extractMin cs = (,) <$> findMin cs <*> deleteMin cs
-
-findMin :: Heap a -> Maybe a
-findMin EmptyHeap = Nothing
-findMin (Heap (Tree a _)) = Just a
-
-deleteMin :: Heap a -> Maybe (Heap a)
-deleteMin EmptyHeap = Nothing
-deleteMin (Heap (Tree _ ts)) = Just $ mergePairs ts
-
-mergePairs :: Ord a => [Tree a] -> Heap a
-mergePairs [] = EmptyHeap
-mergePairs [x] = Heap x
-mergePairs (t1:t2:ts) = meld (meld (Heap t1) (Heap t2)) (mergePairs ts)
-
-meld :: Ord a => Heap a -> Heap a -> Heap a
-meld EmptyHeap h = h
-meld h EmptyHeap = h
-meld (Heap h1@(Tree a1 ts1)) (Heap h2@(Tree a2 ts2)) | a1 < a2 = Heap (Tree a1 (h2 : ts1))
-                                                     | otherwise = Heap (Tree a2 (h1 : ts2))
-
-insert :: Ord a => a -> Heap a -> Heap a
-insert e h = meld (Heap (Tree e [])) h
 
 -- ========
 -- = MAIN =
@@ -112,17 +83,17 @@ inputP = do
 
 solve :: Testcase -> Solution
 solve (_, []) = Poodle -- ^ This shouldn't happen, length cs > 0
-solve (s, (h:hs)) = go s hs (fromList $ genInitial h s)
+solve (s, hatches@(h:hs)) = go s hs (genInitial h s \\ hatches)
   where
     -- | If we have checked all the hatches, use the hatch with the minimum coordinates
-    go side [] leashPositions =
-        case findMin leashPositions of
-            Nothing -> Poodle
-            Just c -> Solved c
-    go side (hatch:hs') leashPositions = go side cs' (filterHeap (isValid hatch side) leashPositions)
+    go side [] [] = Poodle
+    go _ [] leashPositions = Solved $ minimum leashPositions
+    go side (hatch:hs') leashPositions = go side hs' (filter (isValid hatch side) leashPositions)
 
     -- | Get possible leash positions from the first hatch coordinates
-    genInitial hatch side = filter (isValid hatch side) [(x, y) | x <- [0..side], y <- [0..side]]
+    genInitial hatch side = filter (isValid hatch side) grid
+      where
+        grid = [(x, y) | x <- [0..side], y <- [0..side]]
 
     -- | Check for a given (hx, hy), s, whether we can use (x, y) as the leash position
     -- 1) We set the radius of the leash to be equal to the distance between leash position and the nearest side
@@ -131,7 +102,3 @@ solve (s, (h:hs)) = go s hs (fromList $ genInitial h s)
       where
         distanceBetween (x1, y1) (x2, y2) = ceiling $ sqrt $ fromIntegral $ (x1 - x2) ^ 2 + (y1 - y2) ^ 2
         radius = minimum [side - x, side - (side - x), side - y, side - (side - y)]
-
-fromList :: Ord a => [a] -> Heap a
-fromList [] = EmptyHeap
-fromList (x:xs) = insert x $ fromList xs
