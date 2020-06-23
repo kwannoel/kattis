@@ -6,11 +6,11 @@
 
 module Main where
 
-import           Data.Foldable (foldl')
-import           Data.List((\\))
+import           Data.Foldable     (foldl')
+import           Data.List         ((\\))
 import           GHC.Generics
 import           Text.Parsec
-import           Text.Parsec.Char (digit)
+import           Text.Parsec.Char  (digit)
 import           Text.Parsec.Error
 
 -- =========
@@ -23,11 +23,12 @@ type Coord = (X, Y)
 type X = Int
 type Y = Int
 
-data Solution = Solved Coord | Poodle
+data Solution = Solved Coord
+    | Poodle
 
 instance Show Solution where
     show (Solved (x, y)) =  show x <> " " <> show y
-    show Poodle = "poodle"
+    show Poodle          = "poodle"
 
 type Parser = Parsec String ()
 
@@ -59,7 +60,7 @@ inputP = do
     n <- int
     -- | List of testcases
     ts <- count n (newline *> testcaseP)
-    return ts      
+    return ts
   where
     testcaseP :: Parsec String () Testcase
     testcaseP = do
