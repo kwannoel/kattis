@@ -1,9 +1,16 @@
 module InputParser where
 
-import           Data.Foldable (foldl')
+import           Data.Foldable     (foldl')
 import           Text.Parsec
-import           Text.Parsec.Char (digit)
+import           Text.Parsec.Char  (digit)
 import           Text.Parsec.Error
+
+{-
+main :: IO ()
+main = do
+    s <- getContents
+    ts <- case parse inputP "" s of
+-}
 
 inputP :: Parsec String () [Testcase]
 inputP = do
